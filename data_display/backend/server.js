@@ -5,6 +5,7 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const DEFAULT_SPREADSHEET_ID = process.env.SPREADSHEET_ID;
 
 app.use(cors());
 app.use(express.json());
@@ -21,16 +22,17 @@ const sheets = google.sheets({ version: 'v4', auth });
 app.post('/api/sheets', async (req, res) => {
   try {
     const { spreadsheetId } = req.body;
+    const targetSpreadsheetId = spreadsheetId || DEFAULT_SPREADSHEET_ID;
     
-    console.log('Received request for spreadsheet ID:', spreadsheetId);
+    console.log('Received request for spreadsheet ID:', targetSpreadsheetId);
     
-    if (!spreadsheetId) {
+    if (!targetSpreadsheetId) {
       return res.status(400).json({ error: 'Spreadsheet ID is required' });
     }
 
     console.log('Attempting to fetch data from Google Sheets...');
     const response = await sheets.spreadsheets.values.get({
-      spreadsheetId,
+      spreadsheetId: targetSpreadsheetId,
       range: 'Sheet1!A:Z', // Adjust range as needed
     });
 
@@ -51,13 +53,14 @@ app.post('/api/sheets', async (req, res) => {
 app.post('/api/sheets/update', async (req, res) => {
   try {
     const { spreadsheetId, data } = req.body;
+    const targetSpreadsheetId = spreadsheetId || DEFAULT_SPREADSHEET_ID;
     
-    if (!spreadsheetId || !data) {
+    if (!targetSpreadsheetId || !data) {
       return res.status(400).json({ error: 'Spreadsheet ID and data are required' });
     }
 
     await sheets.spreadsheets.values.update({
-      spreadsheetId,
+      spreadsheetId: targetSpreadsheetId,
       range: 'Sheet1!A:Z',
       valueInputOption: 'RAW',
       resource: {

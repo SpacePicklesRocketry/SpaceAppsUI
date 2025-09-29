@@ -1,85 +1,69 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './App.css';
 
 function App() {
-  const [spreadsheetUrl, setSpreadsheetUrl] = useState('');
+  // Google Apps Script URL for fetching data
+  const SPREADSHEET_URL = "https://script.google.com/macros/s/AKfycby4aXux4-5ZGWD4mWiCyYLtZtresjFkibkl4vG_dcgL_yFs7TkBj-8UvO9hQTPMQIgI/exec";
+  
   const [data, setData] = useState([]);
   const [editableData, setEditableData] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const extractSpreadsheetId = (url) => {
-    // Handle both formats:
-    // https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit
-    // https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit?usp=sharing
-    const match = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-    return match ? match[1] : null;
-  };
+  // Load data automatically when component mounts
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const fetchData = async () => {
-    if (!spreadsheetUrl) {
-      setError('Please enter a Google Sheets URL');
-      return;
-    }
-
-    const spreadsheetId = extractSpreadsheetId(spreadsheetUrl);
-    if (!spreadsheetId) {
-      setError('Invalid Google Sheets URL format');
-      return;
-    }
-
     setLoading(true);
     setError('');
 
-    // For now, let's use demo data that matches your spreadsheet format
-    // In production, you would uncomment the backend code below
-    console.log('Using demo data for spreadsheet ID:', spreadsheetId);
-    const demoData = [
-      ['1', '7'],
-      ['2', '8'], 
-      ['3', '9'],
-      ['4', '10'],
-      ['5', '11'],
-      ['6', '12']
-    ];
-    setData(demoData);
-    setEditableData(demoData);
-    setError('Demo mode: Showing sample data. Backend integration available with proper setup.');
-    setLoading(false);
-
-    /* Uncomment this section when backend is properly set up:
     try {
-      console.log('Attempting to fetch data for spreadsheet ID:', spreadsheetId);
-      // Try to fetch from backend first
-      const response = await fetch('/api/sheets', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ spreadsheetId })
+      console.log('Fetching data from Google Apps Script...');
+      
+      const response = await fetch(SPREADSHEET_URL, {
+        method: 'GET',
+        mode: 'cors',
+        headers: {
+          'Accept': 'application/json',
+        }
       });
-
-      console.log('Response status:', response.status);
-      console.log('Response ok:', response.ok);
-
+      
       if (!response.ok) {
-        const errorText = await response.text();
-        console.log('Error response:', errorText);
-        throw new Error(`Backend error: ${response.status} - ${response.statusText}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const result = await response.json();
       console.log('Successfully fetched data:', result);
-      setData(result.data);
-      setEditableData(result.data);
-      setError(''); // Clear any previous errors
+      
+      // Handle the data format - assuming it's a 2D array
+      if (Array.isArray(result)) {
+        setData(result);
+        setEditableData(result);
+        setError('');
+      } else if (result.data && Array.isArray(result.data)) {
+        setData(result.data);
+        setEditableData(result.data);
+        setError('');
+      } else {
+        throw new Error('Unexpected data format received');
+      }
     } catch (err) {
-      // Show the actual error to the user
       console.error('Fetch error:', err);
-      setError(`Error: ${err.message}. Using demo data instead.`);
-      console.log('Using demo data:', err.message);
+      
+      // Check if it's a CORS error
+      if (err.message.includes('CORS') || err.message.includes('blocked')) {
+        setError('CORS error: Google Apps Script may need to be deployed as a web app with proper permissions. Using demo data instead.');
+      } else {
+        setError(`Error: ${err.message}. Using demo data instead.`);
+      }
+      
+      // Fallback demo data
       const demoData = [
-        ['1', '7'],
-        ['2', '8'], 
+        ['5', '7'],
+        ['5', '8'], 
         ['3', '9'],
         ['4', '10'],
         ['5', '11'],
@@ -90,40 +74,21 @@ function App() {
     } finally {
       setLoading(false);
     }
-    */
   };
 
   const handleEdit = () => {
     setIsEditing(true);
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     setLoading(true);
-    try {
-      const response = await fetch('/api/sheets/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          spreadsheetId: extractSpreadsheetId(spreadsheetUrl),
-          data: editableData 
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Backend not available - data saved locally only');
-      }
-
-      setData(editableData);
-      setIsEditing(false);
-    } catch (err) {
-      // Fallback: save locally
-      console.log('Saving locally:', err.message);
-      setData(editableData);
-      setIsEditing(false);
-      setError('Data saved locally (backend not available)');
-    } finally {
-      setLoading(false);
-    }
+    
+    // Since we're only reading from Google Apps Script, save locally
+    console.log('Saving data locally...');
+    setData(editableData);
+    setIsEditing(false);
+    setError('Data saved locally (read-only mode)');
+    setLoading(false);
   };
 
   const handleCellChange = (rowIndex, colIndex, value) => {
@@ -172,25 +137,17 @@ function App() {
     <div className="App">
       <header className="App-header">
         <h1>Satellite Data Display</h1>
+        <p>Data loaded from Google Apps Script</p>
         
-        <div className="input-section">
-          <input
-            type="text"
-            placeholder="Enter Google Sheets link here"
-            value={spreadsheetUrl}
-            onChange={(e) => setSpreadsheetUrl(e.target.value)}
-            className="url-input"
-          />
-          <button onClick={fetchData} disabled={loading} className="search-btn">
-            {loading ? 'Loading...' : 'Search'}
-          </button>
-        </div>
-
+        {loading && <div className="loading">Loading data from Google Apps Script...</div>}
         {error && <div className="error">{error}</div>}
 
         {data.length > 0 && (
           <div className="data-section">
             <div className="controls">
+              <button onClick={fetchData} disabled={loading} className="refresh-btn">
+                {loading ? 'Refreshing...' : 'Refresh Data'}
+              </button>
               {!isEditing ? (
                 <button onClick={handleEdit} className="edit-btn">
                   Edit Data

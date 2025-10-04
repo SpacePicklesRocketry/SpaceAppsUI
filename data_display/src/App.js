@@ -44,13 +44,13 @@ function App() {
 
   return (
     <div className="App dashboard-root">
-      <Header mission={data.mission} overallStatus={data.status.overall} />
+      {/* <Header mission={data.mission} overallStatus={data.status.overall} /> */}
 
       <div className="header-card">
         <Header mission={data.mission} overallStatus={data.status.overall} />
       </div>
 
-      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+      <div className="last-sync-wrapper">
         <LastSyncCard lastSync={lastSync} onSync={() => setLastSync(new Date().toISOString())} />
       </div>
 

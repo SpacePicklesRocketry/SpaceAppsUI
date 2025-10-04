@@ -205,3 +205,119 @@ h1 {
     padding: 10px 8px;
   }
 }
+
+/* Dashboard styles */
+.dashboard-root {
+  align-items: flex-start;
+  background: none;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: white;
+  margin-bottom: 20px;
+}
+
+.header-left h1 {
+  font-size: 1.75rem;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 6px 10px;
+  margin-left: 12px;
+  border-radius: 12px;
+  font-weight: 700;
+}
+.status-badge.ok { background: #2ecc71; color: #062b11 }
+.status-badge.warn { background: #f39c12; color: #3e2707 }
+.status-badge.crit { background: #e74c3c; color: #2b0907 }
+.status-badge.unknown { background: #95a5a6; color: #082024 }
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 20px;
+  width: 100%;
+}
+
+.left-column { display: flex; flex-direction: column; gap: 20px; }
+.main-column { display: flex; flex-direction: column; gap: 20px; }
+
+.widget {
+  background: white;
+  color: #222;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+.uptime-widget .uptime-value { font-size: 1.5rem; font-weight: 700; margin: 8px 0; }
+
+.mission-timer div { margin-top: 6px; }
+
+.sensors-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.sensor-card {
+  background: #fff;
+  padding: 14px;
+  border-radius: 10px;
+  text-align: left;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+}
+.sensor-card .sensor-header { display:flex; justify-content:space-between; align-items:center; }
+.sensor-card .sensor-value { font-size: 1.25rem; font-weight: 700; margin: 8px 0; }
+.sensor-card.OK { border-left: 4px solid #2ecc71 }
+.sensor-card.WARN { border-left: 4px solid #f39c12 }
+.sensor-card.CRIT { border-left: 4px solid #e74c3c }
+.sensor-card .spark-dot { display:inline-block; width:8px; height:8px; margin-right:6px; background:#ddd; border-radius:50%; }
+
+.right-widgets { display:flex; flex-direction:column; gap:12px; margin-left:12px; min-width:280px; }
+.map-placeholder { background:#f6f8fa; height:160px; display:flex; align-items:center; justify-content:center; border-radius:8px; }
+
+.downlink-panel .downlink-summary { margin-top:8px; font-style:italic; color:#444; }
+
+@media (max-width: 900px) {
+  .dashboard-grid { grid-template-columns: 1fr; }
+  .right-widgets { margin-left: 0; }
+}
+
+/* Sensor card enhancements */
+.sensor-card { display:flex; flex-direction:column; gap:8px; }
+.sensor-card-top { display:flex; justify-content:space-between; align-items:center; }
+.sensor-label { font-weight:700; color:#223; }
+.sensor-status { font-weight:700; padding:4px 8px; border-radius:8px; font-size:0.8rem; }
+.sensor-status.ok { background:#1de85d; color:#000000 }
+.sensor-status.warn { background:#ffdd1c; color:#000000 }
+.sensor-status.crit { background:#fb2f21; color:#000000 }
+
+.sensor-main { display:flex; align-items:baseline; gap:8px; }
+.sensor-value { font-size:1.5rem; font-weight:800; color:#111 }
+.sensor-units { color:#000000; }
+
+.sensor-meta { display:flex; gap:10px; color:#000000; font-size:0.85rem; }
+.sensor-history { display:flex; gap:6px; align-items:center; margin-top:6px; }
+.sensor-history .spark-dot { width:10px; height:10px; background:linear-gradient(90deg,#8ab6ff,#6ecb9b); box-shadow:0 2px 6px rgba(0,0,0,0.08); }
+
+/* white card behind sensors */
+.sensors-card {
+  background: transparent;
+  padding: 6px;
+  border-radius: 8px;
+}
+
+/* Last sync card */
+.last-sync-card { width: 100%; max-width: 1200px; margin: 8px 0 16px 0; display:flex; justify-content:space-between; align-items:center; padding:12px; }
+.last-sync-time { font-weight:700; color:#222; }
+
+/* Header card */
+.header-card { background: #fff; padding: 14px; border-radius:12px; box-shadow:0 12px 30px rgba(0,0,0,0.08); margin-bottom:12px; }
+
+/* Narrow last sync */
+.last-sync-card { max-width: 360px; }

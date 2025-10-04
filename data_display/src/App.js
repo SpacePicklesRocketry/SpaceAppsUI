@@ -1,173 +1,82 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import './App.css';
+import Header from './components/Header';
+import UptimeWidget from './components/UptimeWidget';
+import MissionTimer from './components/MissionTimer';
+import SensorCard from './components/SensorCard';
+import MapWidget from './components/MapWidget';
+import DownlinkPanel from './components/DownlinkPanel';
+import LastSyncCard from './components/LastSyncCard';
+import { useState } from 'react';
+
+// Mock data shaped to the dashboard contract
+const mock = {
+  mission: {
+    id: 'MV-1',
+    name: 'Mission Volta (MV-1) Module Alpha - Astro',
+    startTime: '2025-09-30T12:00:00Z',
+    endTime: '2025-10-07T12:00:00Z'
+  },
+  status: {
+    overall: 'OK',
+    uptimePct: 99.2,
+    lastUp: '2025-10-01T10:01:00Z',
+    lastDown: '2025-09-30T22:44:00Z'
+  },
+  communications: {
+    lastDownlink: '2025-10-01T09:58:12Z',
+    nextTransmission: '2025-10-01T10:30:00Z',
+    lastDownlinkSummary: 'Telemetry packet 0xA3: OK'
+  },
+  sensors: [
+    { id: 'temp-1', label: 'Core Temp', value: 22.5, units: '°C', status: 'OK', history: [21.9,22.0,22.2,22.5] },
+    { id: 'bat-volt', label: 'Battery Volts', value: 12.1, units: 'V', status: 'WARN', history: [12.6,12.5,12.3,12.1] },
+    { id: 'press-1', label: 'Pressure', value: 101.3, units: 'kPa', status: 'OK', history: [101.1,101.2,101.3] },
+    { id: 'rad-1', label: 'Radiation', value: 0.12, units: 'mSv', status: 'OK', history: [0.10,0.11,0.12] }
+  ],
+  location: { lat: 37.7749, lon: -122.4194 }
+};
 
 function App() {
-  // Google Apps Script URL for fetching data
-  const SPREADSHEET_URL = "https://script.google.com/macros/s/AKfycby4aXux4-5ZGWD4mWiCyYLtZtresjFkibkl4vG_dcgL_yFs7TkBj-8UvO9hQTPMQIgI/exec";
-  
-  const [data, setData] = useState([]);
-  const [editableData, setEditableData] = useState([]);
-  const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  // Load data automatically when component mounts
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    setLoading(true);
-    setError('');
-
-    try {
-      console.log('Fetching data from Google Apps Script...');
-      
-      const response = await fetch(SPREADSHEET_URL, {
-        method: 'GET',
-        mode: 'cors',
-        headers: {
-          'Accept': 'application/json',
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log('Successfully fetched data:', result);
-      
-      // Handle the data format - assuming it's a 2D array
-      if (Array.isArray(result)) {
-        setData(result);
-        setEditableData(result);
-        setError('');
-      } else if (result.data && Array.isArray(result.data)) {
-        setData(result.data);
-        setEditableData(result.data);
-        setError('');
-      } else {
-        throw new Error('Unexpected data format received');
-      }
-    } catch (err) {
-      console.error('Fetch error:', err);
-      
-      // Check if it's a CORS error
-      if (err.message.includes('CORS') || err.message.includes('blocked')) {
-        setError('CORS error: Google Apps Script may need to be deployed as a web app with proper permissions. Using demo data instead.');
-      } else {
-        setError(`Error: ${err.message}. Using demo data instead.`);
-      }
-      
-      // Fallback demo data
-      const demoData = [
-        ['5', '7'],
-        ['5', '8'], 
-        ['3', '9'],
-        ['4', '10'],
-        ['5', '11'],
-        ['6', '12']
-      ];
-      setData(demoData);
-      setEditableData(demoData);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleEdit = () => {
-    setIsEditing(true);
-  };
-
-  const handleSave = () => {
-    setLoading(true);
-    
-    // Since we're only reading from Google Apps Script, save locally
-    console.log('Saving data locally...');
-    setData(editableData);
-    setIsEditing(false);
-    setError('Data saved locally (read-only mode)');
-    setLoading(false);
-  };
-
-  const handleCellChange = (rowIndex, colIndex, value) => {
-    const newData = [...editableData];
-    newData[rowIndex][colIndex] = value;
-    setEditableData(newData);
-  };
-
-  const renderTable = (tableData, isEditable = false) => {
-    if (!tableData.length) return null;
-
-    return (
-      <table className="data-table">
-        <thead>
-          <tr>
-            {tableData[0].map((_, colIndex) => (
-              <th key={colIndex}>Column {colIndex + 1}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {tableData.map((row, rowIndex) => (
-            <tr key={rowIndex}>
-              {row.map((cell, colIndex) => (
-                <td key={colIndex}>
-                  {isEditable ? (
-                    <input
-                      type="text"
-                      value={cell}
-                      onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
-                      className="cell-input"
-                    />
-                  ) : (
-                    cell
-                  )}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    );
-  };
+  // For now we use mock data for the dashboard. You can wire fetch logic later.
+  const data = mock;
+  const [lastSync, setLastSync] = useState(null);
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>Satellite Data Display</h1>
-        <p>Data loaded from Google Apps Script</p>
-        
-        {loading && <div className="loading">Loading data from Google Apps Script...</div>}
-        {error && <div className="error">{error}</div>}
+    <div className="App dashboard-root">
+      <Header mission={data.mission} overallStatus={data.status.overall} />
 
-        {data.length > 0 && (
-          <div className="data-section">
-            <div className="controls">
-              <button onClick={fetchData} disabled={loading} className="refresh-btn">
-                {loading ? 'Refreshing...' : 'Refresh Data'}
-              </button>
-              {!isEditing ? (
-                <button onClick={handleEdit} className="edit-btn">
-                  Edit Data
-                </button>
-              ) : (
-                <div>
-                  <button onClick={handleSave} disabled={loading} className="save-btn">
-                    {loading ? 'Saving...' : 'Save'}
-                  </button>
-                  <button onClick={() => setIsEditing(false)} className="cancel-btn">
-                    Cancel
-                  </button>
-                </div>
-              )}
+      <div className="header-card">
+        <Header mission={data.mission} overallStatus={data.status.overall} />
+      </div>
+
+      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
+        <LastSyncCard lastSync={lastSync} onSync={() => setLastSync(new Date().toISOString())} />
+      </div>
+
+      <div className="dashboard-grid">
+        <aside className="left-column">
+          <div className="sensors-card">
+            <div className="sensors-grid">
+              {data.sensors.map((s) => (
+                <SensorCard key={s.id} sensor={s} />
+              ))}
             </div>
-            
-            {renderTable(isEditing ? editableData : data, isEditing)}
           </div>
-        )}
-      </header>
+        </aside>
+
+        <main className="main-column">
+          <div className="main-row">
+            
+            <div className="right-widgets">
+              <MapWidget location={data.location} />
+              <DownlinkPanel comms={data.communications} />
+              <UptimeWidget status={data.status} />
+              <MissionTimer mission={data.mission} />
+            </div>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

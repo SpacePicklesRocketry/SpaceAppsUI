@@ -37,7 +37,7 @@ const mock = {
 };
 
 function App() {
-  // If you prefer, put your sheet URL here so the frontend asks the backend directly
+  // Connected to your specific Google Sheet with satellite mission data
   const SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/1pHq-AqK4n5VYqx6j8R_CraASY0tCVzcan1GwJoXNebE/';
 
   // State for data model
@@ -129,7 +129,7 @@ function App() {
 
   const fetchAndLoad = async () => {
     try {
-  const res = await fetch('/api/sheets', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ spreadsheetUrl: SPREADSHEET_URL }) });
+  const res = await fetch('http://localhost:5000/api/sheets', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ spreadsheetUrl: SPREADSHEET_URL }) });
       const json = await res.json();
       const rows = json.data || json || [];
       const parsed = parseSheetRows(rows);

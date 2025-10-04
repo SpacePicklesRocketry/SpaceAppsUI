@@ -1,5 +1,5 @@
 // Simple test script to verify the setup
-const fetch = require('node-fetch');
+// Using built-in fetch (Node.js 18+)
 
 async function testConnection() {
   try {

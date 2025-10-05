@@ -1,6 +1,38 @@
 import React from 'react';
 
 export default function ObstacleAvoidanceCard({ modulesData, moduleNames = [] }) {
+  // Helper to parse array data from Google Sheets
+  const parseArrayData = (value) => {
+    if (!value || typeof value !== 'string') return value;
+    
+    // Check if the value looks like an array (starts with [ and ends with ])
+    const trimmed = value.trim();
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      try {
+        // Remove brackets and split by comma, then parse each value
+        const arrayStr = trimmed.slice(1, -1);
+        const values = arrayStr.split(',').map(v => {
+          const parsed = parseFloat(v.trim());
+          return isNaN(parsed) ? v.trim() : parsed;
+        });
+        return values;
+      } catch (e) {
+        console.warn('Failed to parse array data:', value, e);
+        return value;
+      }
+    }
+    return value;
+  };
+
+  // Helper to get the latest value from array data or single value
+  const getLatestValue = (value) => {
+    const parsed = parseArrayData(value);
+    if (Array.isArray(parsed)) {
+      return parsed[parsed.length - 1]; // Return the last (most recent) value
+    }
+    return parsed;
+  };
+
   const getObstacleStatus = (status) => {
     // Handle both numeric values and text status from Google Sheet
     if (typeof status === 'string') {
@@ -40,7 +72,7 @@ export default function ObstacleAvoidanceCard({ modulesData, moduleNames = [] })
   // Filter out modules with unknown status and create a clean list
   const validModules = Object.entries(modulesData).map(([columnIndex, data]) => {
     const moduleName = getModuleName(parseInt(columnIndex));
-    const obstacleStatus = getObstacleStatus(data?.OBSTACLE_AVOIDANCE || data?.OBSTACLE || data?.STATUS);
+    const obstacleStatus = getObstacleStatus(getLatestValue(data?.OBSTACLE_AVOIDANCE || data?.OBSTACLE || data?.STATUS));
     
     return {
       columnIndex,

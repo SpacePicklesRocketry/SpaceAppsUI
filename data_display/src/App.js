@@ -10,6 +10,7 @@ import LastSyncCard from './components/LastSyncCard';
 import ModuleCard from './components/ModuleCard';
 import ObstacleAvoidanceCard from './components/ObstacleAvoidanceCard';
 import ViewToggleCard from './components/ViewToggleCard';
+import SensorDataTable from './components/SensorDataTable';
 
 // Mock data shaped to the dashboard contract
 const mock = {
@@ -60,6 +61,47 @@ function App() {
   const [lastSync, setLastSync] = useState(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [viewMode, setViewMode] = useState('consumer'); // 'consumer' or 'company'
+
+  // Helper to parse array data from Google Sheets
+  const parseArrayData = (value) => {
+    if (!value || typeof value !== 'string') return value;
+    
+    // Check if the value looks like an array (starts with [ and ends with ])
+    const trimmed = value.trim();
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      try {
+        // Remove brackets and split by comma, then parse each value
+        const arrayStr = trimmed.slice(1, -1);
+        const values = arrayStr.split(',').map(v => {
+          const parsed = parseFloat(v.trim());
+          return isNaN(parsed) ? v.trim() : parsed;
+        });
+        return values;
+      } catch (e) {
+        console.warn('Failed to parse array data:', value, e);
+        return value;
+      }
+    }
+    return value;
+  };
+
+  // Helper to get the latest value from array data or single value
+  const getLatestValue = (value) => {
+    const parsed = parseArrayData(value);
+    if (Array.isArray(parsed)) {
+      return parsed[parsed.length - 1]; // Return the last (most recent) value
+    }
+    return parsed;
+  };
+
+  // Helper to get all values from array data or single value as array
+  const getAllValues = (value) => {
+    const parsed = parseArrayData(value);
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
+    return [parsed]; // Return single value as array
+  };
 
   // helper: map sheet rows into a structured object per column
   const parseSheetRows = (rows) => {
@@ -114,19 +156,34 @@ function App() {
       lastDownlinkSummary: get('DOWN_SUMMARY') || mock.communications.lastDownlinkSummary,
     };
 
-    // sensor mapping - try to detect commonly named keys
+    // sensor mapping - use dedicated data rows for latest values
     const sensorDefs = [
-      { key: 'CORE_TEMP', id: 'temp-1', label: 'Core Temp', units: '°C' },
-      { key: 'BATTERY_VOLTS', id: 'bat-volt', label: 'Battery Volts', units: 'V' },
-      { key: 'PRESSURE', id: 'press-1', label: 'Pressure', units: 'kPa' },
-      { key: 'RADIATION', id: 'rad-1', label: 'Radiation', units: 'mSv' },
+      { key: 'CORE_TEMP_DATA', id: 'temp-1', label: 'Core Temp', units: '°C' },
+      { key: 'BATTERY_VOLTS_DATA', id: 'bat-volt', label: 'Battery Volts', units: 'V' },
+      { key: 'PRESSURE_DATA', id: 'press-1', label: 'Pressure', units: 'kPa' },
+      { key: 'RADIATION_DATA', id: 'rad-1', label: 'Radiation', units: 'mSv' },
     ];
 
     const sensorsArr = sensorDefs.map((def) => {
-      const val = parseFloat(get(def.key));
-      const history = []; // sheet doesn't provide history; keep single value history
-      if (!isNaN(val)) history.push(val);
-      return { id: def.id, label: def.label, value: isNaN(val) ? get(def.key) : val, units: def.units, status: 'OK', history };
+      const rawValue = get(def.key);
+      const latestValue = getLatestValue(rawValue);
+      const allValues = getAllValues(rawValue);
+      
+      // Parse the latest value as a number if possible
+      const val = parseFloat(latestValue);
+      const isNumeric = !isNaN(val);
+      
+      // Use all values as history if it's an array, otherwise use single value
+      const history = isNumeric ? allValues.filter(v => !isNaN(parseFloat(v))) : [];
+      
+      return { 
+        id: def.id, 
+        label: def.label, 
+        value: isNumeric ? val : latestValue, 
+        units: def.units, 
+        status: 'OK', 
+        history: history.length > 0 ? history : (isNumeric ? [val] : [])
+      };
     });
 
     const loc = { lat: parseFloat(get('LAT')) || mock.location.lat, lon: parseFloat(get('LONG')) || mock.location.lon };
@@ -264,28 +321,38 @@ function App() {
       </div>
       {viewMode === 'consumer' ? (
         unlocked ? (
-          <div className="dashboard-grid">
-            <aside className="left-column">
-              <div className="sensors-card">
-                <div className="sensors-grid">
-                  {sensors.map((s) => (
-                    <SensorCard key={s.id} sensor={s} />
-                  ))}
+          <>
+            <div className="dashboard-grid">
+              <aside className="left-column">
+                <div className="sensors-card">
+                  <div className="sensors-grid">
+                    {sensors.map((s) => (
+                      <SensorCard key={s.id} sensor={s} />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </aside>
+              </aside>
 
-            <main className="main-column">
-              <div className="main-row">
-                <div className="right-widgets">
-                  <MapWidget location={location} />
-                  <CommunicationsPanel comms={communications} />
-                  <UptimeWidget status={status} />
-                  <MissionTimer mission={mission} />
+              <main className="main-column">
+                <div className="main-row">
+                  <div className="right-widgets">
+                    <MapWidget location={location} />
+                    <CommunicationsPanel comms={communications} />
+                    <UptimeWidget status={status} />
+                    <MissionTimer mission={mission} />
+                  </div>
                 </div>
-              </div>
-            </main>
-          </div>
+              </main>
+            </div>
+            
+            {/* Sensor Data Table for Consumer View */}
+            {colMapsState && colMapsState[selectedCol] && (
+              <SensorDataTable 
+                moduleData={colMapsState[selectedCol]} 
+                moduleName={columns[selectedCol - 1] || `Module ${selectedCol}`}
+              />
+            )}
+          </>
         ) : (
           <div className="locked-message">
             Data locked — enter the correct key for the selected module to view data.

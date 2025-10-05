@@ -11,14 +11,38 @@ export default function ModuleCard({ moduleName, moduleData }) {
     return () => clearInterval(timer);
   }, []);
 
-  const getStatusColor = (status) => {
-    switch (status?.toUpperCase()) {
-      case 'OK': return '#4CAF50';
-      case 'CLEAR': return '#2ECC71';
-      case 'ERROR': return '#F44336';
-      default: return '#9E9E9E';
+  // Helper to parse array data from Google Sheets
+  const parseArrayData = (value) => {
+    if (!value || typeof value !== 'string') return value;
+    
+    // Check if the value looks like an array (starts with [ and ends with ])
+    const trimmed = value.trim();
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      try {
+        // Remove brackets and split by comma, then parse each value
+        const arrayStr = trimmed.slice(1, -1);
+        const values = arrayStr.split(',').map(v => {
+          const parsed = parseFloat(v.trim());
+          return isNaN(parsed) ? v.trim() : parsed;
+        });
+        return values;
+      } catch (e) {
+        console.warn('Failed to parse array data:', value, e);
+        return value;
+      }
     }
+    return value;
   };
+
+  // Helper to get the latest value from array data or single value
+  const getLatestValue = (value) => {
+    const parsed = parseArrayData(value);
+    if (Array.isArray(parsed)) {
+      return parsed[parsed.length - 1]; // Return the last (most recent) value
+    }
+    return parsed;
+  };
+
 
   const getObstacleStatus = (status) => {
     if (typeof status === 'string') {
@@ -79,7 +103,7 @@ export default function ModuleCard({ moduleName, moduleData }) {
     };
   };
 
-  const obstacleStatus = getObstacleStatus(moduleData?.OBSTACLE_AVOIDANCE || moduleData?.OBSTACLE);
+  const obstacleStatus = getObstacleStatus(getLatestValue(moduleData?.OBSTACLE_AVOIDANCE || moduleData?.OBSTACLE));
   const timers = getMissionTimers();
 
   return (
@@ -103,7 +127,7 @@ export default function ModuleCard({ moduleName, moduleData }) {
           <div className="sensor-item">
             <div className="sensor-icon">🌡️</div>
             <div className="sensor-info">
-              <div className="sensor-value">{moduleData?.CORE_TEMP || 'N/A'}°C</div>
+              <div className="sensor-value">{getLatestValue(moduleData?.CORE_TEMP_DATA) || 'N/A'}°C</div>
               <div className="sensor-label">Temperature</div>
             </div>
           </div>
@@ -111,7 +135,7 @@ export default function ModuleCard({ moduleName, moduleData }) {
           <div className="sensor-item">
             <div className="sensor-icon">🔋</div>
             <div className="sensor-info">
-              <div className="sensor-value">{moduleData?.BATTERY_VOLTS || 'N/A'}V</div>
+              <div className="sensor-value">{getLatestValue(moduleData?.BATTERY_VOLTS_DATA) || 'N/A'}V</div>
               <div className="sensor-label">Battery</div>
             </div>
           </div>
@@ -132,7 +156,7 @@ export default function ModuleCard({ moduleName, moduleData }) {
           <div className="sensor-item">
             <div className="sensor-icon">⚠️</div>
             <div className="sensor-info">
-              <div className="sensor-value">{moduleData?.RADIATION || 'N/A'}</div>
+              <div className="sensor-value">{getLatestValue(moduleData?.RADIATION_DATA) || 'N/A'}</div>
               <div className="sensor-label">Radiation</div>
             </div>
           </div>

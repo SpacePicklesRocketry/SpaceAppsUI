@@ -871,3 +871,209 @@ h1 {
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== SENSOR DATA TABLE STYLES ===== */
+.sensor-data-table {
+  margin-top: 24px;
+}
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.table-header h3 {
+  color: #eaf2ff;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.table-info {
+  color: #9ca3af;
+  font-size: 0.875rem;
+  background: rgba(255,255,255,0.05);
+  padding: 4px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.table-container {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.02);
+}
+
+.sensor-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.sensor-table thead {
+  background: rgba(255,255,255,0.05);
+}
+
+.sensor-table th {
+  padding: 16px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #eaf2ff;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  white-space: nowrap;
+}
+
+.index-column {
+  width: 60px;
+  text-align: center;
+  background: rgba(255,255,255,0.08);
+}
+
+.sensor-column {
+  min-width: 120px;
+}
+
+.sensor-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sensor-icon {
+  font-size: 1.1rem;
+  opacity: 0.8;
+}
+
+.sensor-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sensor-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #eaf2ff;
+}
+
+.sensor-units {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  opacity: 0.8;
+}
+
+.sensor-table tbody tr {
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  transition: background-color 0.2s ease;
+}
+
+.sensor-table tbody tr:hover {
+  background: rgba(255,255,255,0.03);
+}
+
+.even-row {
+  background: rgba(255,255,255,0.01);
+}
+
+.odd-row {
+  background: transparent;
+}
+
+.sensor-table td {
+  padding: 12px;
+  border-right: 1px solid rgba(255,255,255,0.05);
+}
+
+.index-cell {
+  text-align: center;
+  font-weight: 600;
+  color: #9ca3af;
+  background: rgba(255,255,255,0.02);
+  font-size: 0.8rem;
+}
+
+.value-cell {
+  text-align: center;
+}
+
+.value-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.value-text {
+  font-weight: 600;
+  color: #eaf2ff;
+  font-size: 0.875rem;
+}
+
+.value-units {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  opacity: 0.8;
+}
+
+/* Responsive table styles */
+@media (max-width: 900px) {
+  .sensor-table {
+    font-size: 0.8rem;
+  }
+  
+  .sensor-table th,
+  .sensor-table td {
+    padding: 8px 6px;
+  }
+  
+  .sensor-column {
+    min-width: 100px;
+  }
+  
+  .sensor-header {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .sensor-label {
+    font-size: 0.8rem;
+  }
+  
+  .sensor-units {
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .table-header {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  
+  .sensor-table th,
+  .sensor-table td {
+    padding: 6px 4px;
+  }
+  
+  .sensor-column {
+    min-width: 80px;
+  }
+  
+  .value-container {
+    gap: 1px;
+  }
+  
+  .value-text {
+    font-size: 0.8rem;
+  }
+  
+  .value-units {
+    font-size: 0.65rem;
+  }
+}

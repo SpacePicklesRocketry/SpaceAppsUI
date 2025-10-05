@@ -70,7 +70,7 @@ export default function ObstacleAvoidanceCard({ modulesData, moduleNames = [] })
   };
 
   // Filter out modules with unknown status and create a clean list
-  const validModules = Object.entries(modulesData).map(([columnIndex, data]) => {
+  const validModules = Object.entries(modulesData || {}).map(([columnIndex, data]) => {
     const moduleName = getModuleName(parseInt(columnIndex));
     const obstacleStatus = getObstacleStatus(getLatestValue(data?.OBSTACLE_AVOIDANCE || data?.OBSTACLE || data?.STATUS));
     

@@ -11,6 +11,7 @@ export default function ModuleCard({ moduleName, moduleData }) {
     return () => clearInterval(timer);
   }, []);
 
+
   // Helper to parse array data from Google Sheets
   const parseArrayData = (value) => {
     if (!value || typeof value !== 'string') return value;

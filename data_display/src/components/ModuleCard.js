@@ -11,14 +11,6 @@ export default function ModuleCard({ moduleName, moduleData }) {
     return () => clearInterval(timer);
   }, []);
 
-  const getStatusColor = (status) => {
-    switch (status?.toUpperCase()) {
-      case 'OK': return '#4CAF50';
-      case 'CLEAR': return '#2ECC71';
-      case 'ERROR': return '#F44336';
-      default: return '#9E9E9E';
-    }
-  };
 
   const getObstacleStatus = (status) => {
     if (typeof status === 'string') {

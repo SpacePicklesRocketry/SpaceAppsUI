@@ -42,9 +42,11 @@ const mock = {
 };
 
 function App() {
-  // Connected to your specific Google Sheet with satellite mission data
-  const SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/1pHq-AqK4n5VYqx6j8R_CraASY0tCVzcan1GwJoXNebE/';
+  // Apps Script Web App URL (doGet returns JSON stringified 2D array)
+  // Replace with your deployed web app URL (ends with /exec)
+  const SPREADSHEET_URL = 'https://script.google.com/macros/s/AKfycby4aXux4-5ZGWD4mWiCyYLtZtresjFkibkl4vG_dcgL_yFs7TkBj-8UvO9hQTPMQIgI/exec';
 
+  
   // State for data model
   const [columns, setColumns] = useState([]); // column headers (modules)
   const [selectedCol, setSelectedCol] = useState(1); // default to first data column
@@ -62,6 +64,7 @@ function App() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [viewMode, setViewMode] = useState('consumer'); // 'consumer' or 'company'
 
+  
   // Helper to parse array data from Google Sheets
   const parseArrayData = (value) => {
     if (!value || typeof value !== 'string') return value;
@@ -191,12 +194,25 @@ function App() {
     return { mission: missionObj, status: statusObj, communications: comms, sensors: sensorsArr, location: loc };
   };
 
-  const fetchAndLoad = async () => {
+  const fetchData = async () => {
     try {
       setIsSyncing(true);
-      const res = await fetch('http://localhost:5000/api/sheets', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ spreadsheetUrl: SPREADSHEET_URL }) });
-      const json = await res.json();
-      const rows = json.data || json || [];
+      const res = await fetch(SPREADSHEET_URL, {
+        method: 'GET',
+        mode: 'cors',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      // Handle either JSON object/array or a JSON string payload
+      let payload = null;
+      try {
+        payload = await res.json();
+      } catch (_) {
+        const text = await res.text();
+        try { payload = JSON.parse(text); } catch (__) { payload = text; }
+      }
+      const rows = (payload && payload.data) ? payload.data : payload || [];
       const parsed = parseSheetRows(rows);
       if (!parsed) return;
       const { headers, colMaps } = parsed;
@@ -218,7 +234,7 @@ function App() {
   };
 
   useEffect(() => {
-    fetchAndLoad();
+    fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -286,19 +302,19 @@ function App() {
             isSyncing={isSyncing} 
             onSync={() => {
               setLastSync(new Date().toISOString());
-              fetchAndLoad();
+              fetchData();
             }} 
           />
           
           <div className="module-selector">
             <label>Module:</label>
             <select 
-              value={selectedCol || ''} 
+              value={selectedCol != null ? String(selectedCol) : ''} 
               onChange={(e) => setSelectedCol(parseInt(e.target.value, 10))}
             >
               {columns.length === 0 && <option value="">(no modules)</option>}
               {columns.map((c, i) => (
-                <option key={i} value={i + 1}>{c || `Module ${i + 1}`}</option>
+                <option key={i} value={String(i + 1)}>{c || `Module ${i + 1}`}</option>
               ))}
             </select>
           </div>

@@ -25,9 +25,9 @@ The app is currently set to demo mode and will show sample data that matches you
 ### Option 3: Fix Proxy Issues
 The issue is likely with the proxy configuration. Try these steps:
 
-1. **Check if backend is running:**
+1. **Check direct script fetch:**
    ```powershell
-   Invoke-WebRequest -Uri "http://localhost:5000/api/sheets" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"spreadsheetId":"1pHq-AqK4n5VYqx6j8R_CraASY0tCVzcan1GwJoXNebE"}'
+   Invoke-WebRequest -Uri "https://docs.google.com/spreadsheets/d/1pHq-AqK4n5VYqx6j8R_CraASY0tCVzcan1GwJoXNebE/" -Method GET -Headers @{"Accept"="application/json"}
    ```
 
 2. **If backend works, uncomment the backend code in App.js:**
@@ -42,21 +42,21 @@ The issue is likely with the proxy configuration. Try these steps:
 
 ### Test Backend Directly
 ```powershell
-# This should return your Google Sheets data
-Invoke-WebRequest -Uri "http://localhost:5000/api/sheets" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"spreadsheetId":"1pHq-AqK4n5VYqx6j8R_CraASY0tCVzcan1GwJoXNebE"}'
+# This should return the spreadsheet script response (HTML/JSON depending on script)
+Invoke-WebRequest -Uri "https://docs.google.com/spreadsheets/d/1pHq-AqK4n5VYqx6j8R_CraASY0tCVzcan1GwJoXNebE/" -Method GET -Headers @{"Accept"="application/json"}
 ```
 
 ### Test Frontend Proxy
 ```powershell
-# This should also work if proxy is configured correctly
-Invoke-WebRequest -Uri "http://localhost:3000/api/sheets" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"spreadsheetId":"1pHq-AqK4n5VYqx6j8R_CraASY0tCVzcan1GwJoXNebE"}'
+# Alternative gviz endpoint if needed
+Invoke-WebRequest -Uri "https://docs.google.com/spreadsheets/d/1pHq-AqK4n5VYqx6j8R_CraASY0tCVzcan1GwJoXNebE/gviz/tq?tqx=out:json" -Method GET
 ```
 
 ## Common Issues
 
-1. **"Cannot POST /api/sheets"** - Backend not running or proxy not working
-2. **"Backend not available"** - Backend server not started
-3. **"Invalid Google Sheets URL"** - URL format issue (your URL is correct)
+1. **HTML returned instead of JSON** - Your script URL may be the sheet UI; use the Apps Script web app URL or the gviz endpoint
+2. **CORS errors** - Ensure the script allows cross-origin GETs
+3. **Invalid URL** - Verify you’re using the published script/web app URL
 4. **CORS errors** - Backend CORS configuration issue
 
 ## Your Google Sheets URL

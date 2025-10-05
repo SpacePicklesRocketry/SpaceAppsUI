@@ -74,3 +74,4 @@ To test array data integration:
 2. Use the "Sync now" button to refresh data
 3. Check that latest values are displayed correctly
 4. Verify that sensor history charts show the complete array
+

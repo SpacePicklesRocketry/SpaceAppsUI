@@ -9,7 +9,7 @@ export default function UptimeWidget({ status }) {
       <div className="uptime-value">{uptimePct != null ? `${uptimePct}%` : 'N/A'}</div>
       <div className="uptime-times">
         <div>Last Up: {lastUp ? new Date(lastUp).toLocaleString() : '—'}</div>
-        <div>Last Down: {lastDown ? new Date(lastDown).toLocaleString() : '—'}</div>
+        <div>Last Down: {lastDown ? new Date(lastDown).toLocaleString() : 'N/A'}</div>
       </div>
     </div>
   );

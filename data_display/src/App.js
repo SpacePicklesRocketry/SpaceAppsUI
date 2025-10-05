@@ -5,8 +5,11 @@ import UptimeWidget from './components/UptimeWidget';
 import MissionTimer from './components/MissionTimer';
 import SensorCard from './components/SensorCard';
 import MapWidget from './components/MapWidget';
-import DownlinkPanel from './components/DownlinkPanel';
+import CommunicationsPanel from './components/CommunicationsPanel';
 import LastSyncCard from './components/LastSyncCard';
+import ModuleCard from './components/ModuleCard';
+import ObstacleAvoidanceCard from './components/ObstacleAvoidanceCard';
+import ViewToggleCard from './components/ViewToggleCard';
 
 // Mock data shaped to the dashboard contract
 const mock = {
@@ -20,11 +23,12 @@ const mock = {
     overall: 'OK',
     uptimePct: 99.2,
     lastUp: '2025-10-01T10:01:00Z',
-    lastDown: '2025-09-30T22:44:00Z'
+    lastDown: '2025-10-01T09:58:12Z'
   },
   communications: {
+    lastUplink: '2025-10-01T10:01:00Z',
     lastDownlink: '2025-10-01T09:58:12Z',
-    nextTransmission: '2025-10-01T10:30:00Z',
+    nextDownlink: '2025-10-01T10:30:00Z',
     lastDownlinkSummary: 'Telemetry packet 0xA3: OK'
   },
   sensors: [
@@ -54,6 +58,8 @@ function App() {
   const [sensors, setSensors] = useState(mock.sensors);
   const [location, setLocation] = useState(mock.location);
   const [lastSync, setLastSync] = useState(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [viewMode, setViewMode] = useState('consumer'); // 'consumer' or 'company'
 
   // helper: map sheet rows into a structured object per column
   const parseSheetRows = (rows) => {
@@ -98,13 +104,14 @@ function App() {
       overall: 'OK',
       uptimePct: parseFloat(get('UPTIME')) || mock.status.uptimePct,
       lastUp: get('LAST_UP') || mock.status.lastUp,
-      lastDown: get('LAST_DOWN') || mock.status.lastDown,
+      lastDown: get('LAST_DOWN') || mock.communications.lastDownlink,
     };
 
     const comms = {
-      lastDownlink: get('LAST_DOWN') || get('LAST_DOWNLINK') || mock.communications.lastDownlink,
-      nextTransmission: get('NEXT_DOWN') || get('NEXT_TRANSMISSION') || mock.communications.nextTransmission,
-      lastDownlinkSummary: get('DOWN_SUMMARY') || get('DOWN_SUMMARY') || mock.communications.lastDownlinkSummary,
+      lastUplink: get('LAST_UP') || mock.communications.lastUplink,
+      lastDownlink: get('LAST_DOWN') || mock.communications.lastDownlink,
+      nextDownlink: get('NEXT_DOWN') || mock.communications.nextDownlink,
+      lastDownlinkSummary: get('DOWN_SUMMARY') || mock.communications.lastDownlinkSummary,
     };
 
     // sensor mapping - try to detect commonly named keys
@@ -129,24 +136,27 @@ function App() {
 
   const fetchAndLoad = async () => {
     try {
-  const res = await fetch('http://localhost:5000/api/sheets', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ spreadsheetUrl: SPREADSHEET_URL }) });
+      setIsSyncing(true);
+      const res = await fetch('http://localhost:5000/api/sheets', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ spreadsheetUrl: SPREADSHEET_URL }) });
       const json = await res.json();
       const rows = json.data || json || [];
       const parsed = parseSheetRows(rows);
       if (!parsed) return;
       const { headers, colMaps } = parsed;
-  // trim headers and normalize module names
-  const trimmed = headers.slice(1).map((h) => (h == null ? '' : String(h).trim()));
-  setColumns(trimmed);
+      // trim headers and normalize module names
+      const trimmed = headers.slice(1).map((h) => (h == null ? '' : String(h).trim()));
+      setColumns(trimmed);
       // store colMaps so we can validate keys before showing data
       setColMapsState(colMaps);
       // default to second column (index 1)
-  const defaultCol = trimmed.length > 0 ? 1 : null;
-  if (defaultCol) setSelectedCol(defaultCol);
+      const defaultCol = trimmed.length > 0 ? 1 : null;
+      if (defaultCol) setSelectedCol(defaultCol);
       // do not load the model until user unlocks with the key
     } catch (err) {
       console.error('Sheet fetch failed, using mock', err);
       // fallback stays as mock
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -199,62 +209,134 @@ function App() {
     setInputKey(expected);
   };
 
+  const handleViewToggle = () => {
+    setViewMode(viewMode === 'consumer' ? 'company' : 'consumer');
+  };
+
   return (
     <div className="App dashboard-root">
       <div className="header-card">
-        <Header mission={mission} overallStatus={status.overall} />
+        <Header 
+          mission={mission} 
+          overallStatus={status.overall} 
+        />
       </div>
 
-      <div className="last-sync-wrapper">
-        <LastSyncCard lastSync={lastSync} onSync={() => setLastSync(new Date().toISOString())} />
-        {/* column selector */}
-        <div style={{ marginLeft: 16 }}>
-          <label style={{ marginRight: 8, color: '#cfe9ff' }}>Module:</label>
-          <select value={selectedCol || ''} onChange={(e) => setSelectedCol(parseInt(e.target.value, 10))}>
-            {columns.length === 0 && <option value="">(no modules)</option>}
-            {columns.map((c, i) => (
-              <option key={i} value={i + 1}>{c || `Module ${i + 1}`}</option>
-            ))}
-          </select>
-        </div>
-        <div style={{ marginLeft: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <input placeholder="Enter key" value={inputKey} onChange={(e) => setInputKey(e.target.value)} style={{ padding: '8px 10px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.08)' }} />
-          <button className="search-btn" onClick={handleUnlock}>Unlock</button>
-          <button className="edit-btn" onClick={autofillKey}>Autofill</button>
-          {lockError && <div style={{ color: '#ffccd5', marginLeft: 8 }}>{lockError}</div>}
-        </div>
-      </div>
-
-      {/* Debug: show detected modules and sheet load status */}
-      <div style={{ marginTop: 10, color: '#cfe9ff' }}>
-        <strong>Detected modules:</strong> {columns.length ? columns.join(', ') : '(none)'}
-      </div>
-      {unlocked ? (
-        <div className="dashboard-grid">
-        <aside className="left-column">
-          <div className="sensors-card">
-            <div className="sensors-grid">
-              {sensors.map((s) => (
-                <SensorCard key={s.id} sensor={s} />
+      <div className="top-controls">
+        <div className="left-controls">
+          <LastSyncCard 
+            lastSync={lastSync} 
+            isSyncing={isSyncing} 
+            onSync={() => {
+              setLastSync(new Date().toISOString());
+              fetchAndLoad();
+            }} 
+          />
+          
+          <div className="module-selector">
+            <label>Module:</label>
+            <select 
+              value={selectedCol || ''} 
+              onChange={(e) => setSelectedCol(parseInt(e.target.value, 10))}
+            >
+              {columns.length === 0 && <option value="">(no modules)</option>}
+              {columns.map((c, i) => (
+                <option key={i} value={i + 1}>{c || `Module ${i + 1}`}</option>
               ))}
+            </select>
+          </div>
+          
+          <div className="unlock-controls">
+            <input 
+              placeholder="Enter key" 
+              value={inputKey} 
+              onChange={(e) => setInputKey(e.target.value)} 
+            />
+            <button className="search-btn" onClick={handleUnlock}>Unlock</button>
+            <button className="edit-btn" onClick={autofillKey}>Autofill</button>
+            {lockError && <div className="lock-error">{lockError}</div>}
+          </div>
+        </div>
+        
+        <div className="right-controls">
+          <ViewToggleCard viewMode={viewMode} onToggle={handleViewToggle} />
+        </div>
+      </div>
+      {viewMode === 'consumer' ? (
+        unlocked ? (
+          <div className="dashboard-grid">
+            <aside className="left-column">
+              <div className="sensors-card">
+                <div className="sensors-grid">
+                  {sensors.map((s) => (
+                    <SensorCard key={s.id} sensor={s} />
+                  ))}
+                </div>
+              </div>
+            </aside>
+
+            <main className="main-column">
+              <div className="main-row">
+                <div className="right-widgets">
+                  <MapWidget location={location} />
+                  <CommunicationsPanel comms={communications} />
+                  <UptimeWidget status={status} />
+                  <MissionTimer mission={mission} />
+                </div>
+              </div>
+            </main>
+          </div>
+        ) : (
+          <div className="locked-message">
+            Data locked — enter the correct key for the selected module to view data.
+          </div>
+        )
+      ) : (
+        <div className="company-dashboard">
+          <div className="company-left-column">
+            <div className="modules-section">
+              <h3>Module Status</h3>
+              <div className="modules-grid">
+                {columns.map((moduleName, index) => {
+                  const moduleData = colMapsState && colMapsState[index + 1];
+                  return (
+                    <ModuleCard 
+                      key={moduleName} 
+                      moduleName={moduleName} 
+                      moduleData={moduleData} 
+                    />
+                  );
+                })}
+              </div>
             </div>
           </div>
-        </aside>
 
-        <main className="main-column">
-          <div className="main-row">
+          <div className="company-right-column">
             <div className="right-widgets">
               <MapWidget location={location} />
-              <DownlinkPanel comms={communications} />
-              <UptimeWidget status={status} />
-              <MissionTimer mission={mission} />
+              {colMapsState && colMapsState[selectedCol] ? (() => {
+                const model = colMapToModel(colMapsState[selectedCol]);
+                return (
+                  <>
+                    <CommunicationsPanel comms={model.communications} />
+                    <UptimeWidget status={model.status} />
+                  </>
+                );
+              })() : (
+                <>
+                  <CommunicationsPanel comms={communications} />
+                  <UptimeWidget status={status} />
+                </>
+              )}
+              <ObstacleAvoidanceCard 
+                modulesData={colMapsState} 
+                moduleNames={columns} 
+              />
             </div>
           </div>
-        </main>
         </div>
-      ) : (
-        <div style={{ marginTop: 20, color: '#cfe9ff' }}>Data locked — enter the correct key for the selected module to view data.</div>
       )}
+
     </div>
   );
 }
